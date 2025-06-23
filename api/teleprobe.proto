@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package teleprobe.api;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+option go_package = "api/";
+
+message Metric {
+  string name = 1;
+  int32 value = 2;
+  google.protobuf.Timestamp created_at = 3;
+}
+
+service TelemetrySinkService {
+    rpc Report(Metric) returns (google.protobuf.Empty) {}
+}
