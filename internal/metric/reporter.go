@@ -1,4 +1,4 @@
-package teleprobe
+package metric
 
 import (
 	"context"

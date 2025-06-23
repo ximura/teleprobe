@@ -1,4 +1,4 @@
-package teleprobe
+package metric
 
 import (
 	"context"
@@ -19,10 +19,11 @@ type Metric struct {
 	out      chan MetricValue
 }
 
-func NewMetric(name string, d time.Duration) Metric {
+func NewMetric(name string, rate int) Metric {
+	interval := time.Duration(float64(time.Second) / float64(rate))
 	return Metric{
 		name:     name,
-		duration: d,
+		duration: interval,
 		out:      make(chan MetricValue),
 	}
 }
@@ -30,7 +31,6 @@ func NewMetric(name string, d time.Duration) Metric {
 func (m *Metric) Run(ctx context.Context) error {
 	ticker := time.NewTicker(m.duration)
 	defer ticker.Stop()
-	defer close(m.out)
 
 	for {
 		select {
@@ -53,6 +53,7 @@ func (m *Metric) Run(ctx context.Context) error {
 }
 
 func (m *Metric) Close() error {
+	close(m.out)
 	return nil
 }
 
