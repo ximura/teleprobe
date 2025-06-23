@@ -12,9 +12,15 @@ func main() {
 	ctx := context.Background()
 	log.Println("sensor")
 
+	cfg, err := LoadConfig("../../data/sensor.json")
+	if err != nil {
+		log.Fatalf("failed to read config, %v", err)
+	}
+
 	manager := metric.NewManager(10)
-	manager.Register("metric_1", 10)
-	manager.Register("metric_2", 5)
+	for _, m := range cfg.Metrics {
+		manager.Register(m.Name, m.Rate)
+	}
 
 	reporter := metric.NewReporter("sensor_1", manager.Data())
 
