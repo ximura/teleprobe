@@ -25,7 +25,7 @@ func NewTelemetryClient(addr string) (*TelemetryClient, error) {
 	return &TelemetryClient{client: client, conn: conn}, nil
 }
 
-func (tc *TelemetryClient) Report(ctx context.Context, m metric.MetricValue) error {
+func (tc *TelemetryClient) Report(ctx context.Context, m metric.Measurement) error {
 	_, err := tc.client.Report(ctx, &api.Metric{
 		Name:      m.Name,
 		Value:     int32(m.Value),

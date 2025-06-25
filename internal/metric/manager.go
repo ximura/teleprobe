@@ -15,14 +15,14 @@ var (
 
 type Manager struct {
 	metrics map[string]*Metric
-	out     chan MetricValue
+	out     chan Measurement
 	wg      sync.WaitGroup
 }
 
 func NewManager(bufferSize int) Manager {
 	return Manager{
 		metrics: make(map[string]*Metric),
-		out:     make(chan MetricValue, bufferSize),
+		out:     make(chan Measurement, bufferSize),
 	}
 }
 
@@ -70,6 +70,6 @@ func (m *Manager) Close() error {
 	return nil
 }
 
-func (m *Manager) Data() <-chan MetricValue {
+func (m *Manager) Data() <-chan Measurement {
 	return m.out
 }

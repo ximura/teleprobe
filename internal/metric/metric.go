@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type MetricValue struct {
+type Measurement struct {
 	Name      string
 	Value     float64
 	Timestamp time.Time
@@ -16,7 +16,7 @@ type MetricValue struct {
 type Metric struct {
 	name     string
 	duration time.Duration
-	out      chan MetricValue
+	out      chan Measurement
 }
 
 func NewMetric(name string, rate int) Metric {
@@ -24,7 +24,7 @@ func NewMetric(name string, rate int) Metric {
 	return Metric{
 		name:     name,
 		duration: interval,
-		out:      make(chan MetricValue),
+		out:      make(chan Measurement),
 	}
 }
 
@@ -40,7 +40,7 @@ func (m *Metric) Run(ctx context.Context) error {
 		case <-ticker.C:
 			value := rand.Float64() * 100
 			select {
-			case m.out <- MetricValue{
+			case m.out <- Measurement{
 				Name:      m.name,
 				Value:     value,
 				Timestamp: time.Now().UTC(),
@@ -57,6 +57,6 @@ func (m *Metric) Close() error {
 	return nil
 }
 
-func (m *Metric) Data() <-chan MetricValue {
+func (m *Metric) Data() <-chan Measurement {
 	return m.out
 }

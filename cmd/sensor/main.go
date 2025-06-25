@@ -10,6 +10,7 @@ import (
 	"github.com/ximura/teleprobe/internal/async"
 	"github.com/ximura/teleprobe/internal/grpc"
 	"github.com/ximura/teleprobe/internal/metric"
+	"github.com/ximura/teleprobe/internal/sensor"
 )
 
 type MetricConfig struct {
@@ -54,7 +55,7 @@ func main() {
 		manager.Register(m.Name, m.Rate)
 	}
 
-	reporter := metric.NewReporter("sensor_1", client, manager.Data())
+	reporter := sensor.New("sensor_1", client, manager.Data())
 
 	acts := []async.Runner{
 		async.NewShutdown(),
