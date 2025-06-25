@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net"
 
@@ -11,23 +10,22 @@ import (
 )
 
 type GRPCService struct {
-	port int
+	listAddr string
 
 	server *grpc.Server
 }
 
 // NewGRPCService creates a new GRPCService instance.
-func NewGRPCService(port int) *GRPCService {
+func NewGRPCService(addr string) *GRPCService {
 	return &GRPCService{
-		port:   port,
-		server: grpc.NewServer(),
+		listAddr: addr,
+		server:   grpc.NewServer(),
 	}
 }
 
 func (gs *GRPCService) Run(ctx context.Context) error {
 	lc := &net.ListenConfig{}
-	listAddr := fmt.Sprintf(":%d", gs.port)
-	lis, err := lc.Listen(ctx, "tcp", listAddr)
+	lis, err := lc.Listen(ctx, "tcp", gs.listAddr)
 	if err != nil {
 		return err
 	}
@@ -40,7 +38,7 @@ func (gs *GRPCService) Run(ctx context.Context) error {
 		gs.Close()
 	}()
 
-	log.Println("Serving GRPC Service on " + listAddr)
+	log.Println("Serving GRPC Service on " + gs.listAddr)
 	if err := gs.server.Serve(lis); err != nil {
 		return err
 	}

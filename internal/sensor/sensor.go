@@ -48,6 +48,6 @@ func (r *Sensor) Close() error {
 }
 
 func (r *Sensor) report(ctx context.Context, data metric.Measurement) error {
-	log.Printf("%s: %.4f\n", data.Name, data.Value)
+	log.Printf("%s: %d\n", data.Name, data.Value)
 	return r.reporter.Report(ctx, data)
 }

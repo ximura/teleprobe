@@ -2,10 +2,7 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"log"
-	"os"
 
 	"github.com/ximura/teleprobe/internal/async"
 	"github.com/ximura/teleprobe/internal/grpc"
@@ -13,35 +10,12 @@ import (
 	"github.com/ximura/teleprobe/internal/sensor"
 )
 
-type MetricConfig struct {
-	Name string `json:"name,omitempty"`
-	Rate int    `json:"rate,omitempty"`
-}
-
-type Config struct {
-	Addr    string         `json:"addr,omitempty"`
-	Metrics []MetricConfig `json:"metrics,omitempty"`
-}
-
-func LoadConfig(path string) (*Config, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, fmt.Errorf("open config: %w", err)
-	}
-	defer f.Close()
-
-	var cfg Config
-	if err := json.NewDecoder(f).Decode(&cfg); err != nil {
-		return nil, fmt.Errorf("decode config: %w", err)
-	}
-	return &cfg, nil
-}
-
 func main() {
-	ctx := context.Background()
-	log.Println("sensor")
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	log.Println("sensor initing")
 
-	cfg, err := LoadConfig("data/sensor.json")
+	cfg, err := sensor.LoadConfig("data/sensor.json")
 	if err != nil {
 		log.Fatalf("failed to read config, %v", err)
 	}
@@ -55,15 +29,16 @@ func main() {
 		manager.Register(m.Name, m.Rate)
 	}
 
-	reporter := sensor.New("sensor_1", client, manager.Data())
+	reporter := sensor.New(cfg.Name, client, manager.Data())
 
 	acts := []async.Runner{
 		async.NewShutdown(),
 		&manager,
 		&reporter,
 	}
-
+	log.Println("sensor starting")
 	if err := async.RunGroup(acts).Run(ctx); err != nil {
+		log.Println("sensor stopped")
 		return
 	}
 }

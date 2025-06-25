@@ -9,7 +9,7 @@ import (
 
 type Measurement struct {
 	Name      string
-	Value     float64
+	Value     int
 	Timestamp time.Time
 }
 
@@ -38,7 +38,7 @@ func (m *Metric) Run(ctx context.Context) error {
 			log.Printf("Stoping metric %s\n", m.name)
 			return ctx.Err()
 		case <-ticker.C:
-			value := rand.Float64() * 100
+			value := rand.Int()
 			select {
 			case m.out <- Measurement{
 				Name:      m.name,
