@@ -39,6 +39,7 @@ func main() {
 	})
 
 	acts := []async.Runner{
+		async.NewShutdown(),
 		flusher,
 		grpcService,
 	}
