@@ -5,9 +5,10 @@ import (
 	"log"
 
 	"github.com/ximura/teleprobe/api"
-	"github.com/ximura/teleprobe/internal/grpc"
 	"github.com/ximura/teleprobe/internal/sink"
+	"github.com/ximura/teleprobe/internal/transport"
 	"github.com/ximura/teleprobe/pkg/async"
+	"github.com/ximura/teleprobe/pkg/grpc"
 	googleGrpc "google.golang.org/grpc"
 )
 
@@ -29,7 +30,7 @@ func main() {
 	service := sink.New(buffer, &sink.JSONFormatter{}, cfg.RateLimit)
 	flusher := sink.NewFlusher(buffer, cfg.FlushInterval)
 
-	server := grpc.NewTelemetrySinkServer(&service)
+	server := transport.NewTelemetrySinkServer(&service)
 	grpcService := grpc.NewGRPCService(cfg.BindAddr)
 	grpcService.Register(func(serviceRegister *googleGrpc.Server) {
 		api.RegisterTelemetrySinkServiceServer(serviceRegister, server)

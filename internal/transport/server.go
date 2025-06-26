@@ -1,4 +1,4 @@
-package grpc
+package transport
 
 import (
 	"context"
@@ -29,6 +29,11 @@ func NewTelemetrySinkServer(h MetricHandler) api.TelemetrySinkServiceServer {
 }
 
 func (s server) Report(ctx context.Context, m *api.Metric) (*emptypb.Empty, error) {
+	if m == nil || m.Name == "" || m.CreatedAt == nil || !m.CreatedAt.IsValid() ||
+		(m.CreatedAt.Seconds == 0 && m.CreatedAt.Nanos == 0) {
+		return nil, status.Error(codes.InvalidArgument, "invalid telemetry message")
+	}
+
 	err := s.handler.Handle(ctx, &metric.Measurement{
 		Name:      m.Name,
 		Value:     int(m.Value),
