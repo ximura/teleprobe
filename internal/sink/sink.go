@@ -31,7 +31,8 @@ type MetricService struct {
 	rateLimiter *rate.Limiter
 }
 
-func New(buffer AppendableBuffer, marshal Marshaller, limiter *rate.Limiter) MetricService {
+func New(buffer AppendableBuffer, marshal Marshaller, ratelimiter int) MetricService {
+	limiter := rate.NewLimiter(rate.Limit(ratelimiter), ratelimiter)
 	return MetricService{
 		buffer:      buffer,
 		marshal:     marshal,

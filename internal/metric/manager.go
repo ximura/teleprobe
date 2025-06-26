@@ -6,7 +6,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/ximura/teleprobe/internal/async"
+	"github.com/ximura/teleprobe/pkg/async"
 )
 
 var (

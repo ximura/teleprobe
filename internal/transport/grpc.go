@@ -1,4 +1,4 @@
-package grpc
+package transport
 
 import (
 	"context"
@@ -10,30 +10,26 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-type TelemetryClient struct {
+type GRPCTransport struct {
 	client api.TelemetrySinkServiceClient
 	conn   *grpc.ClientConn
 }
 
-func NewTelemetryClient(addr string) (*TelemetryClient, error) {
+func NewGRPCTransport(addr string) (*GRPCTransport, error) {
 	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}
 
 	client := api.NewTelemetrySinkServiceClient(conn)
-	return &TelemetryClient{client: client, conn: conn}, nil
+	return &GRPCTransport{client: client, conn: conn}, nil
 }
 
-func (tc *TelemetryClient) Report(ctx context.Context, m metric.Measurement) error {
-	_, err := tc.client.Report(ctx, &api.Metric{
-		Name:      m.Name,
-		Value:     int32(m.Value),
-		CreatedAt: timestamppb.New(m.Timestamp),
+func (t *GRPCTransport) Send(ctx context.Context, data metric.Measurement) error {
+	_, err := t.client.Report(ctx, &api.Metric{
+		Name:      data.Name,
+		Value:     int32(data.Value),
+		CreatedAt: timestamppb.New(data.Timestamp),
 	})
 	return err
-}
-
-func (tc *TelemetryClient) Close() error {
-	return tc.conn.Close()
 }

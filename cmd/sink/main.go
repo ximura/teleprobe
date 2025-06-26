@@ -3,13 +3,11 @@ package main
 import (
 	"context"
 	"log"
-	"time"
 
 	"github.com/ximura/teleprobe/api"
-	"github.com/ximura/teleprobe/internal/async"
 	"github.com/ximura/teleprobe/internal/grpc"
 	"github.com/ximura/teleprobe/internal/sink"
-	"golang.org/x/time/rate"
+	"github.com/ximura/teleprobe/pkg/async"
 	googleGrpc "google.golang.org/grpc"
 )
 
@@ -28,8 +26,7 @@ func main() {
 		log.Fatalf("failed to read config, %v", err)
 	}
 
-	limiter := rate.NewLimiter(rate.Every(time.Second), cfg.RateLimit)
-	service := sink.New(buffer, &sink.JSONFormatter{}, limiter)
+	service := sink.New(buffer, &sink.JSONFormatter{}, cfg.RateLimit)
 	flusher := sink.NewFlusher(buffer, cfg.FlushInterval)
 
 	server := grpc.NewTelemetrySinkServer(&service)

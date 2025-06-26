@@ -4,10 +4,10 @@ import (
 	"context"
 	"log"
 
-	"github.com/ximura/teleprobe/internal/async"
-	"github.com/ximura/teleprobe/internal/grpc"
 	"github.com/ximura/teleprobe/internal/metric"
 	"github.com/ximura/teleprobe/internal/sensor"
+	"github.com/ximura/teleprobe/internal/transport"
+	"github.com/ximura/teleprobe/pkg/async"
 )
 
 func main() {
@@ -19,7 +19,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to read config, %v", err)
 	}
-	client, err := grpc.NewTelemetryClient(cfg.Addr)
+	grpcTransport, err := transport.NewGRPCTransport(cfg.Addr)
 	if err != nil {
 		log.Fatalf("failed to create telemetry client, %v", err)
 	}
@@ -29,7 +29,7 @@ func main() {
 		manager.Register(m.Name, m.Rate)
 	}
 
-	reporter := sensor.New(cfg.Name, client, manager.Data())
+	reporter := sensor.New(cfg.Name, grpcTransport, manager.Data())
 
 	acts := []async.Runner{
 		async.NewShutdown(),

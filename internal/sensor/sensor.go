@@ -4,25 +4,27 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/ximura/teleprobe/internal/metric"
 )
 
-type Reporter interface {
-	Report(ctx context.Context, m metric.Measurement) error
+type Transport interface {
+	Send(ctx context.Context, m metric.Measurement) error
 }
 
 type Sensor struct {
-	name     string
-	reporter Reporter
-	in       <-chan metric.Measurement
+	name      string
+	transport Transport
+	in        <-chan metric.Measurement
 }
 
-func New(name string, r Reporter, in <-chan metric.Measurement) Sensor {
+func New(name string, t Transport, in <-chan metric.Measurement) Sensor {
 	return Sensor{
-		name:     name,
-		reporter: r,
-		in:       in,
+		name:      name,
+		transport: t,
+		in:        in,
 	}
 }
 
@@ -36,8 +38,8 @@ func (r *Sensor) Run(ctx context.Context) error {
 			if !ok {
 				return fmt.Errorf("input channel closed")
 			}
-			if err := r.report(ctx, data); err != nil {
-				log.Printf("failed to report metric, %v", err)
+			if err := sendWithRetry(ctx, r.transport, data); err != nil {
+				log.Printf("failed to send metric, %v", err)
 			}
 		}
 	}
@@ -47,7 +49,17 @@ func (r *Sensor) Close() error {
 	return nil
 }
 
-func (r *Sensor) report(ctx context.Context, data metric.Measurement) error {
-	log.Printf("%s: %d\n", data.Name, data.Value)
-	return r.reporter.Report(ctx, data)
+func sendWithRetry(ctx context.Context, transport Transport, data metric.Measurement) error {
+	operation := func() error {
+		return transport.Send(ctx, data)
+	}
+
+	// Customize backoff strategy
+	expBackoff := backoff.NewExponentialBackOff(
+		backoff.WithMaxElapsedTime(3*time.Second),
+		backoff.WithMaxInterval(time.Second),
+		backoff.WithInitialInterval(100*time.Millisecond),
+	)
+
+	return backoff.Retry(operation, backoff.WithContext(expBackoff, ctx))
 }

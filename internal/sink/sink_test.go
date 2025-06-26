@@ -3,13 +3,13 @@ package sink_test
 import (
 	"context"
 	"encoding/json"
+	"math"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 	"github.com/ximura/teleprobe/internal/metric"
 	"github.com/ximura/teleprobe/internal/sink"
-	"golang.org/x/time/rate"
 )
 
 // mockBuffer implements the minimal Append method for testing.
@@ -31,8 +31,7 @@ func (f *fakeFormatter) Marshal(m *metric.Measurement) ([]byte, error) {
 func TestMetricService_Handle_Success(t *testing.T) {
 	ctx := context.Background()
 	buf := &mockBuffer{}
-	limiter := rate.NewLimiter(rate.Inf, 0) // no rate limit
-	service := sink.New(buf, &sink.JSONFormatter{}, limiter)
+	service := sink.New(buf, &sink.JSONFormatter{}, math.MaxInt32)
 
 	m := &metric.Measurement{
 		Name:      "cpu",
@@ -54,8 +53,7 @@ func TestMetricService_Handle_Success(t *testing.T) {
 func TestMetricService_Handle_TooFast(t *testing.T) {
 	ctx := context.Background()
 	buf := &mockBuffer{}
-	limiter := rate.NewLimiter(rate.Every(10*time.Second), 1) // allow 1 token per 10s
-	service := sink.New(buf, &fakeFormatter{}, limiter)
+	service := sink.New(buf, &fakeFormatter{}, 1)
 
 	m := &metric.Measurement{
 		Name:      "mem",
