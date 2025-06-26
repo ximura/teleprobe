@@ -2,12 +2,11 @@ package sink_test
 
 import (
 	"context"
-	"encoding/json"
-	"math"
+	"errors"
+	"strings"
 	"testing"
-	"time"
 
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 	"github.com/ximura/teleprobe/internal/metric"
 	"github.com/ximura/teleprobe/internal/sink"
 )
@@ -15,58 +14,78 @@ import (
 // mockBuffer implements the minimal Append method for testing.
 type mockBuffer struct {
 	lines []string
+	err   error
 }
 
 func (b *mockBuffer) Append(line string) error {
+	if b.err != nil {
+		return b.err
+	}
 	b.lines = append(b.lines, line)
 	return nil
 }
 
-type fakeFormatter struct{}
+type mockMarshaller struct {
+	output string
+	err    error
+}
 
-func (f *fakeFormatter) Marshal(m *metric.Measurement) ([]byte, error) {
-	return []byte(`1`), nil
+func (m *mockMarshaller) Marshal(_ *metric.Measurement) ([]byte, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	return []byte(m.output), nil
 }
 
 func TestMetricService_Handle_Success(t *testing.T) {
-	ctx := context.Background()
 	buf := &mockBuffer{}
-	service := sink.New(buf, &sink.JSONFormatter{}, math.MaxInt32)
+	marsh := &mockMarshaller{output: `{"name":"a","value":1}`}
+	s := sink.New(buf, marsh, 1024)
 
-	m := &metric.Measurement{
-		Name:      "cpu",
-		Value:     42,
-		Timestamp: time.Now(),
-	}
-
-	err := service.Handle(ctx, m)
-	require.NoError(t, err)
-
-	require.Len(t, buf.lines, 1)
-	var result metric.Measurement
-	err = json.Unmarshal([]byte(buf.lines[0]), &result)
-	require.NoError(t, err)
-	require.Equal(t, "cpu", result.Name)
-	require.Equal(t, 42, result.Value)
+	err := s.Handle(context.Background(), &metric.Measurement{Name: "a", Value: 1})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(buf.lines))
+	assert.True(t, strings.HasSuffix(buf.lines[0], "\n"))
 }
 
-func TestMetricService_Handle_TooFast(t *testing.T) {
-	ctx := context.Background()
+func TestMetricService_Handle_RateLimitExceeded(t *testing.T) {
 	buf := &mockBuffer{}
-	service := sink.New(buf, &fakeFormatter{}, 1)
+	marsh := &mockMarshaller{output: strings.Repeat("x", 100)}
+	s := sink.New(buf, marsh, 10) // only 10 bytes/sec allowed
 
-	m := &metric.Measurement{
-		Name:      "mem",
-		Value:     99,
-		Timestamp: time.Now(),
-	}
+	err := s.Handle(context.Background(), &metric.Measurement{Name: "too-big"})
+	assert.ErrorIs(t, err, sink.ErrRateLimit)
+	assert.Equal(t, 0, len(buf.lines))
+}
 
-	// 1st call should succeed
-	err := service.Handle(ctx, m)
-	require.NoError(t, err)
+func TestMetricService_Handle_MarshalError(t *testing.T) {
+	buf := &mockBuffer{}
+	marsh := &mockMarshaller{err: errors.New("marshal failed")}
+	s := sink.New(buf, marsh, 100)
 
-	// 2nd call should be rate-limited
-	err = service.Handle(ctx, m)
-	require.Error(t, err)
-	require.ErrorIs(t, err, sink.ErrRateLimit)
+	err := s.Handle(context.Background(), &metric.Measurement{Name: "bad"})
+	assert.ErrorContains(t, err, "marshal metric")
+}
+
+func TestMetricService_Handle_AppendError(t *testing.T) {
+	buf := &mockBuffer{err: errors.New("append fail")}
+	marsh := &mockMarshaller{output: `{"name":"a","value":1}`}
+	s := sink.New(buf, marsh, 1000)
+
+	err := s.Handle(context.Background(), &metric.Measurement{Name: "x"})
+	assert.ErrorContains(t, err, "append fail")
+}
+
+func TestMetricService_Handle_BurstWindow(t *testing.T) {
+	buf := &mockBuffer{}
+	marsh := &mockMarshaller{output: strings.Repeat("x", 5)}
+	s := sink.New(buf, marsh, 10) // 10 bytes/sec
+
+	// within burst allowance
+	_ = s.Handle(context.Background(), &metric.Measurement{})
+	_ = s.Handle(context.Background(), &metric.Measurement{}) // burst allows this
+
+	// now should exceed
+	err := s.Handle(context.Background(), &metric.Measurement{})
+	assert.ErrorIs(t, err, sink.ErrRateLimit)
 }
