@@ -15,8 +15,8 @@ type MetricConfig struct {
 
 type Config struct {
 	SynAddr    string         `env:"SINK_ADDR"        envDefault:"localhost:50051"`
-	ConfigFile string         `env:"CONFIG_FILE"        envDefault:"cfg/sensor.json"`
-	Name       string         `env:"SENSOR_NAME"`
+	ConfigFile string         `env:"CONFIG_FILE"      envDefault:"cfg/sensor.json"`
+	Name       string         `env:"SENSOR_NAME"      envDefault:"sensor"`
 	Metrics    []MetricConfig `json:"metrics,omitempty"`
 }
 
