@@ -86,13 +86,6 @@ docker build -f Dockerfile.sink -t teleprobe-sink .
 docker-compose up --build
 ```
 
-Alternatively, run manually:
-
-```bash
-docker run --rm -e SINK_ADDR=localhost:50051 -e LOG_FILE=telemetry.log -e CONFIG_FILE=/cfg/sensor.json teleprobe-sensor
-docker run --rm -e BIND_ADDR=:50051 -e LOG_FILE=sink.log teleprobe-sink
-```
-
 ## Testing
 
 Run unit tests:
@@ -100,3 +93,25 @@ Run unit tests:
 ```bash
 go test ./...
 ```
+
+## Improvements
+
+### Sensor Enhancements
+
+- **Dropped Message Caching**: Currently, if the sink is unavailable, telemetry messages may be lost. Implementing a local caching mechanism (e.g., in-memory buffer, local file queue) would allow the sensor to retry sending messages when the connection is restored.
+- **Retry Logic**: Introducing an exponential backoff retry strategy for failed transmissions would make the sensor more resilient to temporary network issues.
+
+### Communication Layer
+
+- **Message Bus Integration**: Replacing the direct gRPC connection with a message broker such as **RabbitMQ** or **Kafka** would offer:
+  - Built-in message persistence
+  - Retry support
+  - Dead Letter Queue (DLQ) mechanisms for debugging undeliverable telemetry
+  - Better decoupling between sensor and sink services
+
+### Sink Storage Strategy
+
+- **File Storage Limitation**: File-based telemetry storage is difficult to scale and query.
+- **Timeseries Database Recommendation**: For scalability and efficient querying, switching to a timeseries database like **VictoriaMetrics**, **InfluxDB** would be a significant improvement.
+
+These improvements would make the system more reliable, maintainable, and production-ready.
