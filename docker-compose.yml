@@ -1,0 +1,24 @@
+version: "3.8"
+
+services:
+  sink:
+    build:
+      context: .
+      dockerfile: Dockerfile.sink
+    container_name: teleprobe-sink
+    ports:
+      - "50051:50051"
+    environment:
+      - LOG_FILE=/logs/sink.log
+    volumes:
+      - ./logs:/logs
+
+  sensor:
+    build:
+      context: .
+      dockerfile: Dockerfile.sensor
+    container_name: teleprobe-sensor
+    depends_on:
+      - sink
+    environment:
+      - SINK_ADDR=teleprobe-sink:50051

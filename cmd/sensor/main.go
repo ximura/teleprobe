@@ -19,7 +19,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to read config, %v", err)
 	}
-	grpcTransport, err := transport.NewGRPCTransport(cfg.Addr)
+
+	grpcTransport, err := transport.NewGRPCTransport(cfg.SynAddr)
 	if err != nil {
 		log.Fatalf("failed to create telemetry client, %v", err)
 	}
