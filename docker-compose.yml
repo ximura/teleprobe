@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   sink:
     build:
@@ -13,12 +11,24 @@ services:
     volumes:
       - ./logs:/logs
 
-  sensor:
+  sensor_1:
     build:
       context: .
       dockerfile: Dockerfile.sensor
-    container_name: teleprobe-sensor
     depends_on:
       - sink
     environment:
+      - SENSOR_NAME=sensor_1
       - SINK_ADDR=teleprobe-sink:50051
+      - CONFIG_FILE=/cfg/sensor_1.json
+
+  sensor_2:
+    build:
+      context: .
+      dockerfile: Dockerfile.sensor
+    depends_on:
+      - sink
+    environment:
+      - SENSOR_NAME=sensor_2
+      - SINK_ADDR=teleprobe-sink:50051
+      - CONFIG_FILE=/cfg/sensor_2.json

@@ -15,7 +15,7 @@ func main() {
 	defer cancel()
 	log.Println("sensor initing")
 
-	cfg, err := sensor.LoadConfig("data/sensor.json")
+	cfg, err := sensor.LoadConfig()
 	if err != nil {
 		log.Fatalf("failed to read config, %v", err)
 	}

@@ -1,0 +1,16 @@
+{
+    "metrics": [
+        {
+            "name": "metric_1",
+            "rate": 10
+        },
+        {
+            "name": "metric_2",
+            "rate": 20
+        },
+        {
+            "name": "metric_3",
+            "rate": 10
+        }
+    ]
+}

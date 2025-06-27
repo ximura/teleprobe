@@ -14,19 +14,20 @@ type MetricConfig struct {
 }
 
 type Config struct {
-	SynAddr string         `env:"SINK_ADDR"        envDefault:"localhost:50051"`
-	Name    string         `json:"name,omitempty"`
-	Metrics []MetricConfig `json:"metrics,omitempty"`
+	SynAddr    string         `env:"SINK_ADDR"        envDefault:"localhost:50051"`
+	ConfigFile string         `env:"CONFIG_FILE"        envDefault:"cfg/sensor.json"`
+	Name       string         `env:"SENSOR_NAME"`
+	Metrics    []MetricConfig `json:"metrics,omitempty"`
 }
 
-func LoadConfig(path string) (*Config, error) {
+func LoadConfig() (*Config, error) {
 	cfg := Config{}
 
 	if err := env.Parse(&cfg); err != nil {
 		return nil, err
 	}
 
-	f, err := os.Open(path)
+	f, err := os.Open(cfg.ConfigFile)
 	if err != nil {
 		return nil, fmt.Errorf("open config: %w", err)
 	}

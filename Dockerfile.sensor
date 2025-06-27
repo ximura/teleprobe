@@ -18,6 +18,6 @@ FROM alpine:3.20
 WORKDIR /root/
 
 COPY --from=builder /app/sensor .
-COPY data/sensor.json ./data/sensor.json
+COPY --from=builder /app/cfg /cfg
 
 ENTRYPOINT ["./sensor"]
